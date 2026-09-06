@@ -1,0 +1,34 @@
+{
+  "traces": [],
+  "train": [],
+  "demos": [],
+  "signature": {
+    "instructions": "Given the fields `difficulty`, `context`, produce the fields `question`, `answer`.",
+  "fields": [
+  {
+    "prefix": "Difficulty:",
+        "description": "The level of difficulty. For 'easy' difficulty return only a singular number as an answer no sentences"
+  },
+  {
+    "prefix": "Context:",
+        "description": "Reference facts."
+  },
+  {
+    "prefix": "Question:",
+        "description": "The output question."
+  },
+  {
+    "prefix": "Answer:",
+        "description": "The output answer."
+  }
+    ]
+  },
+  "lm": null,
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.14",
+      "dspy": "3.3.1",
+      "cloudpickle": "3.1"
+    }
+  }
+}

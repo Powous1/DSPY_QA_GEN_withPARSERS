@@ -1,0 +1,23 @@
+{
+    "id":{
+        "0":"9"
+    },
+    "question":{
+        "0":"According to Acer\u2019s 2015 Annual Report, what are the six core values, and for each value list the rational meaning and the emotional meaning as described in the report?"
+    },
+    "answer":{
+        "0":"**Core Value \u2013 Rational Meaning \u2013 Emotional Meaning**\n\n1. **Passion** \u2013 \u201cServe as a bridge between people and technology. Be open to try new ideas, methods, and applications.\u201d \u2013 *Enthusiastic, dare\u2011to\u2011dream and determined*  \n\n2. **User\u2011centric** \u2013 \u201cExplore users\u2019 habits and requirements by \u2026\u201d (the report emphasizes understanding and meeting user needs). \u2013 *Positive, caring attitude toward users*  \n\n3. **Innovation** \u2013 \u201cFace up to difficulties and solve them in innovative and realistic ways.\u201d \u2013 *Bold, creative spirit, willingness to break bottlenecks*  \n\n4. **Teamwork** \u2013 \u201cCare for, delegate to, and support people. Influence people through a positive attitude.\u201d \u2013 *Supportive, collaborative, encouraging*  \n\n5. **Balance of Interests** \u2013 \u201cNever appropriate public resources for private use. Never reveal or leak confidential information when inappropriate. Be aware of and stop any behavior that may violate regulations or social codes.\u201d \u2013 *Responsible, fair, ethical*  \n\n6. **Integrity** \u2013 \u201cFollow the codes of conduct or regulations and always serve as a role model for others.\u201d \u2013 *Honest, trustworthy, principled*  \n\nThese six values\u2014Passion, User\u2011centric, Innovation, Teamwork, Balance of Interests, and Integrity\u2014constitute Acer\u2019s core guiding principles in 2015."
+    },
+    "model_answer":{
+        "0":"unknown"
+    },
+    "model_certainty":{
+        "0":"0.2"
+    },
+    "source":{
+        "0":"context"
+    },
+    "correctness_score":{
+        "0":0.0
+    }
+}
