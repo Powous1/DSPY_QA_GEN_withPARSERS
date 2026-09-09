@@ -31,7 +31,7 @@ models ={
     }
 
 parsers ={
-    "1":"pypdf2","2":"pymupdf","3":"pdfplumber"
+    "1":"pypdf2 #currently unavailable","2":"pymupdf","3":"pdfplumber"
 }
 model={
     "1":"gf","2":"cgl","3":"cgs"
@@ -42,14 +42,10 @@ chunker={
 }
 files = {
     f"{i+1}":f"{FILINGS_}/{fil}"
- for i,fil in enumerate(os.listdir(FILINGS_))}
+ for i,fil in enumerate(f for f in os.listdir(FILINGS_) if f.endswith(".pdf"))}
 
 parser = argparse.ArgumentParser()
-def main(mod,pdf,chunk,chunk_size,file,rows):
-    parser.add_argument("-d","--difficulty",
-                        type = str,
-                        help="'-f file.json 'or '--file file.json' to process file.json ")
-    args = parser.parse_args()
+def main(mod,pdf,chunk,chunk_size,file,rows,diff):
     start = time.perf_counter()
     df = create_context(parser=pdf, pdf_file=file, 
                         rows=rows, chunk=chunk, chunk_size=chunk_size).get_tables()
@@ -57,10 +53,10 @@ def main(mod,pdf,chunk,chunk_size,file,rows):
     print(f"Parsing completed in {elapsed:.2f}s")
     df = pd.DataFrame(df)
     start = time.perf_counter()
-    qa_pairs = qa_gen(data =df,model = mod, difficulty = args.difficulty).runit()
+    qa_pairs = qa_gen(data =df,model = mod, file = file,difficulty = diff, parser=pdf,chunker=chunk).runit()
     elapsed = time.perf_counter() - start
     print(f"QA Pair Generation completed in {elapsed:.2f}s")
-    qa_pairs.to_json(f"{QA_PAIRS_DIR}/{args.difficulty}.json", orient='records', lines=True, index=False)
+    qa_pairs.to_json(f"{QA_PAIRS_DIR}/{diff}_{pdf}_{chunk}.json", orient='records', lines=True, index=False)
     return "completed"
 
 
@@ -81,10 +77,13 @@ def ground_score(answer:str,context:str):
     return len(ans_tok & ctx_tok) / len(ans_tok)
 
 class qa_gen:
-    def __init__(self,data,model,difficulty):
+    def __init__(self,data,model,difficulty,parser,chunker,file):
         self.model = f'{model}'
         self.diff = f"{difficulty}"
-        self.data= data        
+        self.data= data  
+        self.file = file 
+        self.parser = parser
+        self.chunker = chunker     
 
     def runit(self,ground_thresh=0.35, num_threads: int = 2):
         
@@ -103,13 +102,16 @@ class qa_gen:
         preds = parallelizer(exec_pairs)  
         qas = [
             {
-                "id": row.doc_id,
+                "file_analyzed":Path(self.file).name,
+                "difficulty":self.diff,
                 "type": row.type,
                 "context": row.table,
                 "question": pred.question,
                 "answer": pred.answer,
                 "page_num": row.page_num,
-                "ground_score":score
+                "ground_score":round(score,4),
+                "parser":f"{self.parser}",
+                "chunker":f"{self.chunker}",
             }
             for row, pred in zip(rows, preds)
             for score in [ground_score(answer=pred.answer, context=row.table) if pred is not None else None]
@@ -128,10 +130,16 @@ def live_timer(stop_event):
 
 
 if __name__ == "__main__":
+    parser.add_argument("-d","--difficulty",
+                            type = str,
+                            choices=["easy", "medium", "hard"],
+                            help="'-f file.json 'or '--file file.json' to process file.json ")
+    args = parser.parse_args()
+    diff = args.difficulty
     stop_signal = threading.Event()
 
     print("Choose which file to analyze")
-    for i, fil in enumerate(os.listdir(FILINGS_)):
+    for i, fil in enumerate(f for f in os.listdir(FILINGS_) if f.endswith(".pdf")):
         (print(f"{i+1}. {fil}"))
     while True:
         choice = input("Select the file number: ").strip()
@@ -149,7 +157,7 @@ if __name__ == "__main__":
             break 
         print("Invalid selection.")
     print("--- Choose a Model ---")
-    print("1. gemini-2.5-flash, 2. chatgpt-large, 3. chagpt-small")
+    print("1. gemini-2.5-flash, 2. chatgpt-large, 3. chatgpt-small")
     while True:
         choice = input("Select a model: ").strip()
         if choice in model:
@@ -167,9 +175,9 @@ if __name__ == "__main__":
         print("Invalid selection.")  
     while True:
         try:
-            user_input = input("Enter a chunking size(the default is 2000):  ").strip()
+            user_input = input("Enter a chunking size(the default is 512):  ").strip()
             if user_input == "":
-                value = 2000
+                value = 512
                 break
             value = int(user_input)  
             break  
@@ -177,7 +185,7 @@ if __name__ == "__main__":
             print("Invalid input.")
     while True:
             try:
-                user_input = input("How many questions to be proposed(the default is 10):  ").strip()
+                user_input = input("How many QA pairs to be proposed (the default is 10):  ").strip()
                 if user_input == "":
                     rows = 10
                     break
@@ -189,7 +197,7 @@ if __name__ == "__main__":
     timer_thread.start()
 
     try:
-        main(mod=mod,pdf=pdf,chunk=chunk,chunk_size = value,file=file,rows=rows)
+        main(mod=mod,pdf=pdf,chunk=chunk,chunk_size = value,file=file,rows=rows,diff=diff)
     finally:
         stop_signal.set()
         timer_thread.join()

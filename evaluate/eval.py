@@ -22,23 +22,39 @@ clients = {
     "groq": OpenAI(api_key=os.getenv("GROQ_API_KEY"), base_url="https://api.groq.com/openai/v1"),
     "gemini": OpenAI(api_key=os.getenv("GEMINI_API_KEY"), base_url="https://generativelanguage.googleapis.com/v1beta/openai/"),
 }
+
+qas = {
+    f"{i+1}":f"{QA_PAIRS_DIR}/{fil}"
+ for i,fil in enumerate(f for f in os.listdir(QA_PAIRS_DIR) if f.endswith(".json"))}
+
+diffs={
+    "easy":1,"medium":2,"hard":3
+}
 parser = argparse.ArgumentParser()
-def main():
+def main(file):
     start = time.perf_counter()
-    files={
-        "1":"easy.json","2":"medium.json","3":"hard.json",
-    }
-    difficulty = "2"
-    Sample = Process(rows = 1 , file = f"{QA_PAIRS_DIR}/hard.json").grab()
+    Sample = Process(rows = 15 , file = file).grab()
+    with open(file) as f:
+        chunk = f.read(10000)
+    difficulty = re.search(r'"difficulty"\s*:\s*"([^"]+)"', chunk)
+    parser_ = re.search(r'"parser"\s*:\s*"([^"]+)"', chunk)
+    chunker = re.search(r'"chunker"\s*:\s*"([^"]+)"', chunk)
+
+    difficulty = difficulty.group(1) if difficulty else None
+    parser_ = parser_.group(1) if parser_ else None
+    chunker = chunker.group(1) if chunker else None
+
     Gret = Chatt(pairs = Sample, model = groq_dict.get("1"),provider = "groq").test_it()
     df =pd.DataFrame(Gret)
-    if difficulty == "1": 
+    if diffs.get(difficulty) == 1: 
         df["correctness_score"] = df.apply(lambda r: Tools.correctness_score(r["answer"], r["model_answer"]), axis=1)
     else:
         df =is_correct(df)
-    df[["id", "question", "answer", "model_answer",
-        "model_certainty","source",
-        "correctness_score"]].to_json(EVAL_OUTPUT_DIR/"test.json",indent=4,index=False)
+    df["correct"] = df["correctness_score"] >= 0.90  
+    df[[ "file_analyzed","difficulty","question", "answer", "model_answer",
+        "model_certainty","source","correct","correctness_score","ground_score",
+        "parser","chunker"]].to_json(EVAL_OUTPUT_DIR/f"{difficulty}_{parser_}_{chunker}_{len(df)}.json",
+         orient='records', index=False)
     elapsed = time.perf_counter() -start
     print(f"Completed Action! -- Total runtime: {elapsed:.2f} seconds")
 
@@ -145,13 +161,26 @@ class Process:
                 "question": f'{df_slice.loc[i,"question"]}',
                 "answer": f'{df_slice.loc[i,"answer"]}',
                 "context": f'{df_slice.loc[i,"context"]}',
-                "id" :f'{df_slice.loc[i,"page_num"]}'
+                "id" :f'{df_slice.loc[i,"page_num"]}',
+                "file_analyzed":f'{df_slice.loc[i,"file_analyzed"]}',
+                "difficulty":f'{df_slice.loc[i,"difficulty"]}',
+                "ground_score":f'{df_slice.loc[i,"ground_score"]}',
+                "parser":f'{df_slice.loc[i,"parser"]}',
+                "chunker":f'{df_slice.loc[i,"chunker"]}',
             })
         return QAs
     
 if __name__ == "__main__":
     try:
-        main()
+        for i, fil in enumerate(f for f in os.listdir(QA_PAIRS_DIR) if f.endswith(".json")):
+            (print(f"{i+1}. {fil}"))
+        while True:
+            choice = input("Select the file number: ").strip()
+            if choice in qas:
+                file = qas[choice]
+                break 
+            print("Invalid selection.") 
+        main(file=file)
     except KeyboardInterrupt:
         sys.exit(0)
     
