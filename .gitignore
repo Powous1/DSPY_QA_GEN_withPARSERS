@@ -5,3 +5,5 @@ report/
 .vscode/
 __pycache__/
 generator/showcase.py
+Dockerfile
+.dockerignore

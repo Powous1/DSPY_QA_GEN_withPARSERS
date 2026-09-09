@@ -1,0 +1,1 @@
+[{"file_analyzed":"apple.pdf","difficulty":"easy","question":"On what page does Item 1. Business begin?","answer":"1","model_answer":"1","model_certainty":"0.99","source":"context","correct":true,"correctness_score":1.0,"ground_score":"1","parser":"pdfplumber","chunker":"recursive"}]
